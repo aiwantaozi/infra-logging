@@ -1,0 +1,42 @@
+apiVersion: "rancher.com/v1"
+kind: Logging
+metadata:
+  name: rancherlogging
+  namespace: cattle-system
+spec:
+  provider: "fluentd"
+  latest_version: "1237"
+  sources:
+  - environment: default
+    input_path: /Users/fengcaixiao/Desktop/work/src/github.com/aiwantaozi/infra-logging/logs/my.log
+    input_format: apache2
+  targets: 
+  - environment: default
+    output_type: aws-elasticsearch-service
+    output_host: aws
+    output_port: 9090
+    output_logstash_prefix: "helloworld"
+    output_logstash_dateformat: '%Y-%m-%d %H:%M:%S'
+    output_tag_key: "hellotagkey"
+  - environment: third
+    output_type: aws-elasticsearch-service
+    output_host: aws
+    output_port: 9090
+    output_logstash_prefix: "helloworld"
+    output_logstash_dateformat: '%Y-%m-%d %H:%M:%S'
+    output_tag_key: "hellotagkey"
+  volumes:
+  - name: fluentd-volume
+    secret:
+      secretName: logging_secret
+status:
+  host:
+    - host_id: 172.17.0.1
+      current_verison: "1234"
+      status: processed
+    - host_id: 172.17.0.2
+      current_version: "1235"
+      status: running
+
+  
+  

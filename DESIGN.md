@@ -129,3 +129,43 @@ Fluentd output example:
 2017-10-10 07:33:26 +0000 kubernetes.var.log.containers.nc-cc382a3f_default_nc-477a3d06-468e-435d-9729-e65c2e9568e6-dc3416d16f3ec64e453c0aa9494a7e7ef174a90c5a6f6648e9c8aa16548aac37.log: {"log":"10.42.147.50 - - [10/Oct/2017:07:33:26 +0000] \"GET / HTTP/1.1\" 304 0 \"-\" \"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.3163.100 Safari/537.36\" \"192.168.16.1\"\r\n","stream":"stdout","docker":{"container_id":"dc3416d16f3ec64e453c0aa9494a7e7ef174a90c5a6f6648e9c8aa16548aac37"},"kubernetes":{"container_name":"nc-477a3d06-468e-435d-9729-e65c2e9568e6","namespace_name":"default","pod_name":"nc-cc382a3f","pod_id":"eb12e717-ad54-11e7-8a03-0242ac110002","labels":{"095e01a0":"0a4f233b","37588df4":"2cb09d4e","49fc8029":"1e734284","57e8c97c":"6670fdb8","714ff794":"f9f90eea","9a730256":"b76e98af","a089e9af":"b326b506","c4d44529":"7b13b53d","eaee61ea":"27b03b75","fce8991e":"b326b506","io_rancher_container_primary":"nc-477a3d06-468e-435d-9729-e65c2e9568e6","io_rancher_deployment_uuid":"cc382a3f-8b78-49c1-8a54-e205a84f10ee","io_rancher_revision":"4a40f7db4d42d8aa25fa3b266735db41"},"host":"node-1","master_url":"https://10.43.0.1:443/api"}}
 ```
 
+## Attention
+1. The FLuentd config secret must be created before they are consumed in pods as environment variables unless they are marked as optional. References to Secrets that do not exist will prevent the pod from starting. References via secretKeyRef to keys that do not exist in a named Secret will prevent the pod from starting. Secrets used to populate environment variables via envFrom that have keys that are considered invalid environment variable names will have those keys skipped, the pod will be allowed to start. 
+2. Individual secrets are limited to 1MB in size. This is to discourage creation of very large secrets which would exhaust apiserver and kubelet memory. However, creation of many smaller secrets could also exhaust memory. More comprehensive limits on memory usage due to secrets is a planned feature.
+3. For these reasons watch and list requests for secrets within a namespace are extremely powerful capabilities and should be avoided, since listing secrets allows the clients to inspect the values if all secrets are in that namespace. The ability to watch and list all secrets in a cluster should be reserved for only the most privileged, system-level components.
+4. For improved performance over a looping get, clients can design resources that reference a secret then watch the resource, re-requesting the secret when the reference changes.
+5. A secret is only sent to a node if a pod on that node requires it. It is not written to disk. It is stored in a tmpfs. It is deleted once the pod that depends on it is deleted.
+
+## Filed can config
+Cluster:
+* Output: Target type
+* Output: Host
+* Output: Port
+* Input: Prefix
+* Input: DateFormat
+* Input: Tag
+Enviroment:
+* Output: Target type
+* Output: Host
+* Output: Port
+* Input: Prefix
+* Input: DateFormat
+* Input: Tag
+Service:
+* Output: Target type
+* Output: Host
+* Output: Port
+* Input: Prefix
+* Input: DateFormat
+* Input: Tag
+* Input: LogPath
+* Input: Format
+
+## Question
+1. how to get the auth that kube config need.
+2. what api version should we use?
+
+
+## Refference
+### Fluentd
+* service format: https://docs.fluentd.org/v0.12/articles/common-log-formats

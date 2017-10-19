@@ -22,3 +22,4 @@ IMAGE=${REPO}/infra-logging:${TAG}
 docker build -t ${IMAGE} .
 echo ${IMAGE} > ../dist/images
 echo Built ${IMAGE}
+docker save ${IMAGE} -o /Users/fengcaixiao/Documents/temp/images/logging.tar

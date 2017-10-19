@@ -1,0 +1,8 @@
+apiVersion: extensions/v1beta1
+kind: ThirdPartyResource
+metadata:
+  name: logging.rancher.com
+  namespace: cattle-system
+description: "Defines snapshot management rules for a disk."
+versions:
+- name: v1
