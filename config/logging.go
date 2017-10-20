@@ -3,19 +3,19 @@ package config
 import (
 	"encoding/json"
 	"io/ioutil"
+	"path"
 
+	"github.com/urfave/cli"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 
 	logging "github.com/aiwantaozi/infra-logging/client/logging"
 	loggingv1 "github.com/aiwantaozi/infra-logging/client/logging/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	"github.com/golang/glog"
 )
 
 var (
-	kubeConfigPath string
+	k8sConfigPath string
 )
 
 type InfraLoggingConfig struct {
@@ -48,21 +48,19 @@ type SecretFileContent struct {
 	} `json:"secrets"`
 }
 
+func Init(c *cli.Context) {
+	k8sConfigPath = c.String("k8s-config-path")
+}
+
 func NewClientConfig() (*rest.Config, error) {
-	rules := clientcmd.NewDefaultClientConfigLoadingRules()
-	overrides := &clientcmd.ConfigOverrides{}
-
-	if kubeConfigPath != "" {
-		rules.ExplicitPath = kubeConfigPath
+	if k8sConfigPath != "" {
+		rules := clientcmd.NewDefaultClientConfigLoadingRules()
+		rules.ExplicitPath = k8sConfigPath
+		overrides := &clientcmd.ConfigOverrides{}
+		return clientcmd.NewNonInteractiveDeferredLoadingClientConfig(rules, overrides).ClientConfig()
 	}
+	return rest.InClusterConfig()
 
-	config, err := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(rules, overrides).ClientConfig()
-	if err != nil {
-		glog.Fatalf("Couldn't get Kubernetes default config: %s", err)
-		return nil, err
-	}
-	//return rest.InClusterConfig()
-	return config, nil
 }
 
 func GetLoggingConfig(namespace, name string) (InfraLoggingConfig, error) {
@@ -79,7 +77,7 @@ func GetLoggingConfig(namespace, name string) (InfraLoggingConfig, error) {
 	if err != nil {
 		return InfraLoggingConfig{}, err
 	}
-	file, err := ioutil.ReadFile(loggingv1.SecretPath)
+	file, err := ioutil.ReadFile(path.Join(loggingv1.SecretPath, loggingv1.SecretName))
 	if err != nil {
 		return InfraLoggingConfig{}, err
 	}

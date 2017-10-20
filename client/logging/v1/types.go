@@ -12,8 +12,8 @@ const (
 	GroupName             = "rancher.com"
 	Namespace             = "cattle-system"
 	Version               = "v1"
-	SecretName            = "logging_secret"
-	SecretPath            = "/Users/fengcaixiao/Desktop/work/src/github.com/aiwantaozi/infra-logging/specs/my_secret.json"
+	SecretName            = "loggingsecret"
+	SecretPath            = "/fluentd/etc/k8ssecret"
 )
 
 var (

@@ -11,7 +11,7 @@ github.com/coreos/prometheus-operator	v0.13.0-70-gee32a18
 github.com/davecgh/go-spew	v1.1.0-9-gecdeabc
 github.com/emicklei/go-restful	v2.4.0-4-gdc0f94e
 github.com/ghodss/yaml	v1.0.0
-github.com/go-kit/kit	v0.6.0
+github.com/go-kit/kit	fe6fe28
 github.com/go-logfmt/logfmt	v0.3.0
 github.com/go-openapi/jsonpointer	779f453
 github.com/go-openapi/jsonreference	36d33bf
@@ -49,9 +49,19 @@ golang.org/x/sys	8dbc5d0
 golang.org/x/text	c01e476
 gopkg.in/inf.v0	v0.9.0
 gopkg.in/yaml.v2	eb3733d
+
 k8s.io/api	kubernetes-1.8.0-beta.0-74-g409c3b23
 k8s.io/apiextensions-apiserver	5fa4460
 k8s.io/apimachinery	abe34e4
 k8s.io/client-go	df46f7f
+k8s.io/client-go/pkg/apis/authorization/v1 df46f7f
+
+
 k8s.io/kube-openapi	abfc5fb
 k8s.io/kubernetes	v1.9.0-alpha.1-1243-gd7e56d5330
+github.com/ugorji/go/codec f1f1a80
+github.com/go-openapi/loads master
+github.com/go-fsnotify/fsnotify v1.4.2
+github.com/emicklei/go-restful-swagger12 1.0.1
+github.com/docker/distribution/reference v2.6.0
+github.com/docker/distribution/digest v2.6.0

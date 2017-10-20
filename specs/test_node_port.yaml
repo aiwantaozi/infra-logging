@@ -7,9 +7,9 @@ metadata:
   name: mynginx2
 spec:
   ports:
-    - port: 30004
+    - port: 8401
       targetPort: 80
-      nodePort: 30003
+      nodePort: 8402
   type: NodePort
   selector:
     k8s-app: mynginx2

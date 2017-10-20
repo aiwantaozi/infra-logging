@@ -11,13 +11,17 @@ import (
 	"github.com/golang/glog"
 	"github.com/urfave/cli"
 
+	infraCfg "github.com/aiwantaozi/infra-logging/config"
 	"github.com/aiwantaozi/infra-logging/operator/fluentd"
-
+	"github.com/aiwantaozi/infra-logging/provider"
 	_ "github.com/aiwantaozi/infra-logging/provider/fluentd"
 )
 
 var VERSION = "v0.0.0-dev"
 
+//TODO:
+//1. remove useless k8s.io code
+//2. package a better base image
 var (
 	logControllerName string
 	logProviderName   string
@@ -30,8 +34,14 @@ func main() {
 	app.Version = VERSION
 	app.Flags = []cli.Flag{
 		cli.StringFlag{
-			Name:  "kubernete-config",
-			Usage: "Kubernete config file path",
+			Name:  "fluentd-config-dir",
+			Usage: "Fluentd config directory",
+			Value: "/fluentd/etc/",
+		},
+		cli.StringFlag{
+			Name:  "k8s-config-path",
+			Usage: "k8s config path",
+			// Value: "/Users/fengcaixiao/.kube/config",
 		},
 	}
 
@@ -41,16 +51,30 @@ func main() {
 		stop := make(chan struct{})
 		signal.Notify(sigs, os.Interrupt, syscall.SIGTERM) // Push signals into channel
 
+		infraCfg.Init(c)
+
 		wg := &sync.WaitGroup{}
-		op, err := fluentd.NewOperator()
+		prd := provider.GetProvider("fluentd", c)
+		go prd.Run()
+
+		op, err := fluentd.NewOperator(prd)
 		if err != nil {
 			return err
 		}
-		op.Run()
 
-		ct := fluentd.NewController()
-		ct.Run()
+		if err = op.Run(); err != nil {
+			logrus.Errorf("Error run operator, details: %v", err)
+			return err
+		}
 
+		ct := fluentd.NewController(prd)
+		if err = ct.Run(); err != nil {
+			logrus.Errorf("Error run controller, details: %v", err)
+			return err
+		}
+
+		//TODO: better stop chan handle
+		go handleSigterm(op, ct)
 		<-sigs // Wait for signals (this hangs until a signal arrives)
 		glog.Info("Shutting down...")
 
@@ -62,7 +86,7 @@ func main() {
 	app.Run(os.Args)
 }
 
-func handleSigterm(op fluentd.Operator, ct fluentd.Controller) {
+func handleSigterm(op *fluentd.Operator, ct *fluentd.Controller) {
 	fmt.Println("in handleSigterm")
 	signalChan := make(chan os.Signal, 1)
 	signal.Notify(signalChan, syscall.SIGTERM)

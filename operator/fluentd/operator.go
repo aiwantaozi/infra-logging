@@ -48,7 +48,7 @@ type Config struct {
 }
 
 // NewOperator a new controller.
-func NewOperator() (*Operator, error) {
+func NewOperator(prd provider.LogProvider) (*Operator, error) {
 	cfg, err := infraConfig.NewClientConfig()
 	if err != nil {
 		return nil, errors.Wrap(err, "instantiating cluster config failed")
@@ -79,7 +79,7 @@ func NewOperator() (*Operator, error) {
 			CrdGroup:  loggingv1.GroupName,
 			LabelsMap: loggingv1.LabelMaps,
 		},
-		provider: provider.GetProvider("fluentd"),
+		provider: prd,
 	}
 	o.loggingInf = cache.NewSharedIndexInformer(
 		&cache.ListWatch{
@@ -98,7 +98,6 @@ func NewOperator() (*Operator, error) {
 	return o, nil
 }
 
-// Run the controller.
 func (c *Operator) Run() error {
 	errChan := make(chan error)
 	go func() {
@@ -119,7 +118,13 @@ func (c *Operator) Run() error {
 		}
 		logrus.Infof("msg", "CRD API endpoints ready")
 	}
-	go c.provider.Run()
+
+	watchedObject, err := c.mclient.LoggingV1().Loggings(loggingv1.Namespace).Get(loggingv1.LoggingName, metav1.GetOptions{})
+	if err != nil {
+		return err
+	}
+	logrus.Info(watchedObject.ClusterName)
+
 	go c.worker()
 
 	go c.loggingInf.Run(c.stopCh)
@@ -250,7 +255,6 @@ func (c *Operator) sync(key string) error {
 	}
 
 	logrus.Infof("msg", "sync logging", "key", key, "name", am.ObjectMeta.Name)
-
 	return nil
 }
 

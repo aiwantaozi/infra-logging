@@ -27,6 +27,11 @@ func NewLoggingCustomResourceDefinition(group string, labels map[string]string) 
 }
 ```
 
+2. How to deploy the daemonset, it need to communicate with the k8s API, user service account, role, and role binding, it will generate token inside the container path /var/run/secrets/kubernetes.io/serviceaccount/
+
 apiextensions-apiserver try to use the metav1 in itself vendor, will happen can't use k8s.io/apimachinery/pkg/apis/meta/v1 as k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1/vendor/k8s.io/apimachinery/pkg/apis/meta/v1
 
 Solve: delete the the vendor in the apiextensions-apiserver, and it will use the vendor in current project.
+
+## TODO
+1. k8s vendor clean, now I just use the whole k8s, need to add the sub package to the vendor.conf

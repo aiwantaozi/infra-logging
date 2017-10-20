@@ -8,25 +8,18 @@ spec:
   latest_version: "1237"
   sources:
   - environment: default
-    input_path: /Users/fengcaixiao/Desktop/work/src/github.com/aiwantaozi/infra-logging/logs/my.log
+    input_path: /fluentd/etc/logs/my.log
     input_format: apache2
   targets: 
   - environment: default
-    output_type: aws-elasticsearch-service
-    output_host: aws
-    output_port: 9090
-    output_logstash_prefix: "helloworld"
+    output_type: elasticsearch
+    output_host: 192.168.1.126
+    output_port: 9200
+    output_logstash_prefix: "logstash"
     output_logstash_dateformat: '%Y-%m-%d %H:%M:%S'
-    output_tag_key: "hellotagkey"
-  - environment: third
-    output_type: aws-elasticsearch-service
-    output_host: aws
-    output_port: 9090
-    output_logstash_prefix: "helloworld"
-    output_logstash_dateformat: '%Y-%m-%d %H:%M:%S'
-    output_tag_key: "hellotagkey"
+    output_tag_key: "mytag2"
   volumes:
-  - name: fluentd-volume
+  - name: logging_secret
     secret:
       secretName: logging_secret
 status:
@@ -37,6 +30,3 @@ status:
     - host_id: 172.17.0.2
       current_version: "1235"
       status: running
-
-  
-  

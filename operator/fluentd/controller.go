@@ -1,8 +1,7 @@
 package fluentd
 
 import (
-	"fmt"
-	"log"
+	"path"
 	"time"
 
 	"k8s.io/client-go/util/workqueue"
@@ -26,10 +25,10 @@ type Controller struct {
 	stopCh   chan struct{}
 }
 
-func NewController() *Controller {
+func NewController(prd provider.LogProvider) *Controller {
 	o := &Controller{
 		queue:    workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), fileMonitorQueue),
-		provider: provider.GetProvider("fluentd"),
+		provider: prd,
 		stopCh:   make(chan struct{}),
 	}
 	return o
@@ -37,7 +36,6 @@ func NewController() *Controller {
 
 func (c *Controller) Run() error {
 	defer c.queue.ShutDown()
-	logrus.Debugf("Debug: Controller Run")
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		return errors.Wrap(err, "config file watch fail")
@@ -49,20 +47,20 @@ func (c *Controller) Run() error {
 		for {
 			select {
 			case event := <-watcher.Events:
-				log.Println("event:", event)
+				logrus.Debug("event:", event)
 				if event.Op&fsnotify.Write == fsnotify.Write {
-					log.Println("modified file:", event.Name)
+					logrus.Debug("modified file:", event.Name)
 					c.enqueue()
 				}
 			case err := <-watcher.Errors:
-				log.Println("error:", err)
+				logrus.Debug("error:", err)
 			}
 		}
 	}()
 
-	err = watcher.Add(loggingv1.SecretPath)
+	err = watcher.Add(path.Join(loggingv1.SecretPath, loggingv1.SecretName))
 	if err != nil {
-		log.Fatal(err)
+		logrus.Error(errors.Wrap(err, "Controller::Run, add watch file fail"))
 	}
 
 	<-c.stopCh
@@ -74,16 +72,12 @@ func (c *Controller) Stop() {
 	close(c.stopCh)
 }
 
-// enqueue adds a key to the queue. If obj is a key already it gets added directly.
-// Otherwise, the key is extracted via keyFunc.
 func (c *Controller) enqueue() {
 	key := c.keyFunc()
-	fmt.Println("controller enque")
+	logrus.Debug("controller enque, file change")
 	c.queue.Add(key)
 }
 
-// worker runs a worker thread that just dequeues items, processes them, and marks them done.
-// It enforces that the syncHandler is never invoked concurrently with the same key.
 func (c *Controller) worker() {
 	for c.processNextWorkItem() {
 	}
@@ -95,7 +89,7 @@ func (c *Controller) processNextWorkItem() bool {
 		return false
 	}
 
-	fmt.Println("controller processNextWorkItem, key:", key)
+	logrus.Debug("controller processNextWorkItem, key:", key)
 	defer c.queue.Done(key)
 
 	err := c.sync(key.(string))
@@ -118,7 +112,7 @@ func (c *Controller) sync(key string) error {
 		return err
 	}
 
-	logrus.Info("msg", "sync logging from file change, key:", key)
+	logrus.Infof("msg", "sync logging from file change, key:", key)
 
 	return nil
 }

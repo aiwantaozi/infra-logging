@@ -3,10 +3,13 @@ package provider
 import (
 	"fmt"
 
+	"github.com/urfave/cli"
+
 	infraconfig "github.com/aiwantaozi/infra-logging/config"
 )
 
 type LogProvider interface {
+	Init(c *cli.Context)
 	ApplyConfig(infraconfig.InfraLoggingConfig) error
 	Run()
 	Stop() error
@@ -18,8 +21,9 @@ var (
 	providers map[string]LogProvider
 )
 
-func GetProvider(name string) LogProvider {
+func GetProvider(name string, c *cli.Context) LogProvider {
 	if provider, ok := providers[name]; ok {
+		provider.Init(c)
 		return provider
 	}
 	return providers["fluentd"]

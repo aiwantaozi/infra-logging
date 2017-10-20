@@ -161,10 +161,6 @@ Service:
 * Input: LogPath
 * Input: Format
 
-## Question
-1. how to get the auth that kube config need.
-2. what api version should we use?
-
 
 ## Refference
 ### Fluentd
