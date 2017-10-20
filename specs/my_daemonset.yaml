@@ -50,7 +50,6 @@ spec:
       - name: fluentd
         image: rancher/infra-logging:dev
         imagePullPolicy: IfNotPresent
-        command:  ["tail", "-f", "/dev/null"] 
         volumeMounts:
         - name: logging-secret
           readOnly: true
