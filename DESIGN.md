@@ -44,7 +44,7 @@ Fluentd file:
 <source>
 	@type   tail
 	path   /var/log/containers/*.log
-	pos_file   /fluentd/log/fluentd-kubernetes.pos
+	pos_file   /fluentd/etc/fluentd-kubernetes.pos
 	time_format   %Y-%m-%dT%H:%M:%S
 	tag   kubernetes.*
 	format   json

@@ -52,6 +52,9 @@ func main() {
 		signal.Notify(sigs, os.Interrupt, syscall.SIGTERM) // Push signals into channel
 
 		infraCfg.Init(c)
+		if err := infraCfg.IsReachable(); err != nil {
+			return err
+		}
 
 		wg := &sync.WaitGroup{}
 		prd := provider.GetProvider("fluentd", c)

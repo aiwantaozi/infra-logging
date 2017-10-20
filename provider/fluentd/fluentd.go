@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"syscall"
 	"text/template"
+	"time"
 
 	"github.com/Sirupsen/logrus"
 	"github.com/pkg/errors"
@@ -27,13 +28,17 @@ const (
 	PidFile      = "fluentd.pid"
 	TemplatePath = "/fluentd/etc/fluentd_template.conf"
 	PluginsPath  = "fluentd/etc/plugins"
+	logFile      = "fluentd.log"
 )
 
 var (
 	fluentdProcess *exec.Cmd
 	cfgPath        string
+	cfgPathBak     string
 	pidPath        string
 	tmpPath        string
+	logPath        string
+	fluentdTimeout = 1 * time.Minute
 )
 
 type Provider struct {
@@ -59,9 +64,11 @@ func init() {
 func (logp *Provider) Init(c *cli.Context) {
 	logp.cfg.ConfigDir = c.String("fluentd-config-dir")
 	cfgPath = path.Join(logp.cfg.ConfigDir, ConfigFile)
+	cfgPathBak = path.Join(logp.cfg.ConfigDir, ConfigFile+".bak")
 	pidPath = path.Join(logp.cfg.ConfigDir, PidFile)
 	tmpPath = path.Join(logp.cfg.ConfigDir, TmpFile)
-	logp.cfg.StartCmd = "fluentd " + "-c " + cfgPath + " -p " + PluginsPath + " -d " + pidPath
+	logPath = path.Join(logp.cfg.ConfigDir, logFile)
+	logp.cfg.StartCmd = "fluentd " + "-c " + cfgPath + " -p " + PluginsPath + " -d " + pidPath + " --log " + logPath
 }
 
 func (logp *Provider) GetName() string {
@@ -116,16 +123,30 @@ func (logp *Provider) ApplyConfig(infraCfg infraconfig.InfraLoggingConfig) error
 }
 
 func (cfg *fluentdConfig) start() error {
-	//TODO: graceful way to run command, handle fluent process shut down
-	fluentdProcess = exec.Command("sh", "-c", cfg.StartCmd)
-	output, err := fluentdProcess.CombinedOutput()
-	msg := fmt.Sprintf("%v -- %v", cfg.Name, string(output))
-	if string(output) != "" {
-		logrus.Info(msg)
-	}
-	logrus.Debug("After Running start command")
-	if err != nil {
-		return fmt.Errorf("error starting %v, details: %v", msg, err)
+	cmd := exec.Command("sh", "-c", cfg.StartCmd)
+
+	var buf bytes.Buffer
+	cmd.Stdout = &buf
+
+	cmd.Start()
+
+	done := make(chan error)
+	go func() {
+		done <- cmd.Wait()
+	}()
+
+	timeout := time.After(fluentdTimeout)
+
+	select {
+	case <-timeout:
+		cmd.Process.Kill()
+		return errors.New("Fluentd command timed out")
+	case err := <-done:
+		logrus.Error("Fluentd Output:", buf.String())
+		if err != nil {
+			logrus.Error("Fluentd return a Non-zero exit code:", err)
+			return err
+		}
 	}
 	return nil
 }
@@ -179,7 +200,10 @@ func (cfg *fluentdConfig) write(infraCfg infraconfig.InfraLoggingConfig) (err er
 	if err != nil {
 		return err
 	}
-
+	err = os.Rename(cfgPath, cfgPathBak)
+	if err != nil {
+		return errors.Wrap(err, "fail to rename config config file")
+	}
 	from, err := os.Open(tmpPath)
 	if err != nil {
 		return errors.Wrap(err, "fail to open tmp config file")
@@ -196,5 +220,8 @@ func (cfg *fluentdConfig) write(infraCfg infraconfig.InfraLoggingConfig) (err er
 	if err != nil {
 		return errors.Wrap(err, "fail to copy config file")
 	}
-	return err
+	if err = to.Sync(); err != nil {
+		return errors.Wrap(err, "fail to sync config file")
+	}
+	return nil
 }

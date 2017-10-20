@@ -5,6 +5,8 @@ import (
 	"io/ioutil"
 	"path"
 
+	"github.com/Sirupsen/logrus"
+	"github.com/pkg/errors"
 	"github.com/urfave/cli"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -52,7 +54,17 @@ func Init(c *cli.Context) {
 	k8sConfigPath = c.String("k8s-config-path")
 }
 
-func NewClientConfig() (*rest.Config, error) {
+func IsReachable() error {
+	cfg, err := NewClientConfig()
+	logrus.Infof("object %v", cfg)
+	if cfg == nil || err != nil || cfg.Host == "" {
+		logrus.Error("Could not communicate with k8s")
+		return errors.Wrap(err, "could not reach k8s")
+	}
+	return nil
+}
+
+func NewClientConfig() (cfg *rest.Config, err error) {
 	if k8sConfigPath != "" {
 		rules := clientcmd.NewDefaultClientConfigLoadingRules()
 		rules.ExplicitPath = k8sConfigPath
@@ -60,7 +72,6 @@ func NewClientConfig() (*rest.Config, error) {
 		return clientcmd.NewNonInteractiveDeferredLoadingClientConfig(rules, overrides).ClientConfig()
 	}
 	return rest.InClusterConfig()
-
 }
 
 func GetLoggingConfig(namespace, name string) (InfraLoggingConfig, error) {

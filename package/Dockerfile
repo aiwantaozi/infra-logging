@@ -9,3 +9,5 @@ RUN apt-get update \
      -y --no-install-recommends \
      procps vim
 
+CMD ["infra-logging"]
+
