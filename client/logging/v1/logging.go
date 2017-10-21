@@ -39,7 +39,7 @@ type LoggingInterface interface {
 	Get(name string, opts metav1.GetOptions) (*Logging, error)
 	Update(*Logging) (*Logging, error)
 	Delete(name string, options *metav1.DeleteOptions) error
-	List(opts metav1.ListOptions) (runtime.Object, error)
+	List(opts metav1.ListOptions) (*LoggingList, error)
 	Watch(opts metav1.ListOptions) (watch.Interface, error)
 	DeleteCollection(dopts *metav1.DeleteOptions, lopts metav1.ListOptions) error
 }
@@ -111,19 +111,20 @@ func (a *loggings) Delete(name string, options *metav1.DeleteOptions) error {
 	return a.client.Delete(name, options)
 }
 
-func (a *loggings) List(opts metav1.ListOptions) (runtime.Object, error) {
+func (a *loggings) List(opts metav1.ListOptions) (*LoggingList, error) {
 	req := a.restClient.Get().
 		Namespace(a.ns).
 		Resource(LoggingResourcePlural).
 		// VersionedParams(&options, api.ParameterCodec)
 		FieldsSelectorParam(nil)
 
+	var p LoggingList
 	b, err := req.DoRaw()
 	if err != nil {
 		fmt.Println("Got error ", err)
-		return nil, err
+		return &p, err
 	}
-	var p LoggingList
+
 	return &p, json.Unmarshal(b, &p)
 }
 
