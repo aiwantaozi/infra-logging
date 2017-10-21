@@ -13,11 +13,11 @@ spec:
   targets: 
   - environment: default
     output_type: elasticsearch
-    output_host: 192.168.1.126
+    output_host: 192.168.33.176
     output_port: 9200
     output_logstash_prefix: "logstash"
     output_logstash_dateformat: '%Y-%m-%d %H:%M:%S'
-    output_tag_key: "mytag2"
+    output_tag_key: "mytag3"
   volumes:
   - name: logging_secret
     secret:

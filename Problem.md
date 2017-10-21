@@ -1,5 +1,6 @@
 ## Need to check
 1. what the dashboard version, tpr object could seen in the dashboard, but crd can't
+2. how to indentify different namespace, we need to distinguish the default(system namespace) and user namespace. the idenfify need to send to k8s controller by UI.
 
 
 ## Solve
@@ -32,6 +33,3 @@ func NewLoggingCustomResourceDefinition(group string, labels map[string]string) 
 apiextensions-apiserver try to use the metav1 in itself vendor, will happen can't use k8s.io/apimachinery/pkg/apis/meta/v1 as k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1/vendor/k8s.io/apimachinery/pkg/apis/meta/v1
 
 Solve: delete the the vendor in the apiextensions-apiserver, and it will use the vendor in current project.
-
-## TODO
-1. k8s vendor clean, now I just use the whole k8s, need to add the sub package to the vendor.conf

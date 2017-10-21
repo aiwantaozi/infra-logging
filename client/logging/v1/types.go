@@ -25,20 +25,23 @@ var (
 )
 
 type LoggingSpec struct {
-	Provider      string `json:"provider"`
-	LatestVersion string `json:"latest_version"`
-	Sources       []struct {
-		Environment string `json:"environment"`
-		InputPath   string `json:"input_path"`
-		InputFormat string `json:"input_format"`
-	} `json:"sources"`
-	Targets []Target `json:"targets"`
-	Volumes []struct {
+	Provider      string   `json:"provider"`
+	LatestVersion string   `json:"latest_version"`
+	Sources       []Source `json:"sources"`
+	Targets       []Target `json:"targets"`
+	Volumes       []struct {
 		Name   string `json:"name"`
 		Secret struct {
 			SecretName string `json:"secretName"`
 		} `json:"secret"`
 	} `json:"volumes"`
+}
+
+type Source struct {
+	Name        string `json:"name"`
+	Environment string `json:"environment"`
+	InputPath   string `json:"input_path"`
+	InputFormat string `json:"input_format"`
 }
 
 type Target struct {
