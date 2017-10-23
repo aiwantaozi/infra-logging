@@ -14,6 +14,7 @@ const (
 	Version               = "v1"
 	SecretName            = "loggingsecret"
 	SecretPath            = "/fluentd/etc/k8ssecret"
+	ProviderName          = "fluentd"
 )
 
 var (
