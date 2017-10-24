@@ -43,11 +43,9 @@
 5. Supporting for more storage, include elastic-search, Splunk, Kafka.
 
 The workflow is like this picture:
-![sequence picture](https://www.draw.io/?lightbox=1&highlight=FFFFFF&edit=_blank&layers=1&nav=1&title=logging_sequence.xml#Uhttps:%2F%2Fraw.githubusercontent.com%2Faiwantaozi%2Fdraw%2Fmaster%2Flogging_sequence.xml)
 ![conponent picture](https://github.com/aiwantaozi/draw/blob/master/logging_sequence.jpg)
 
 Main conponment:
-![conponent picture](https://www.draw.io/?lightbox=1&highlight=0000ff&edit=_blank&layers=1&nav=1&title=logging_conponent.xml#Uhttps:%2F%2Fraw.githubusercontent.com%2Faiwantaozi%2Fdraw%2Fmaster%2Flogging_conponent.xml)
 ![conponent picture](https://github.com/aiwantaozi/draw/blob/master/logging_conponent.jpg)
 
 Fluentd file:
