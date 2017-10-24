@@ -1,0 +1,13 @@
+apiVersion: "rancher.com/v1"
+kind: LoggingHost
+metadata:
+  name: rancherlogging
+  namespace: cattle-system
+spec:
+  host:
+    - host_id: 172.17.0.1
+      current_verison: "1234"
+      status: processed
+    - host_id: 172.17.0.2
+      current_version: "1235"
+      status: running
