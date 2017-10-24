@@ -42,11 +42,15 @@
 4. Integrating with rancher, use catalog to deploy the logging.
 5. Supporting for more storage, include elastic-search, Splunk, Kafka.
 
+<br>
 The workflow is like this picture:
+<br>
 ![conponent picture](https://github.com/aiwantaozi/draw/blob/master/logging_sequence.jpg)
 
 Main conponment:
+<br>
 ![conponent picture](https://github.com/aiwantaozi/draw/blob/master/logging_conponent.jpg)
+<br>
 
 Fluentd file:
 
