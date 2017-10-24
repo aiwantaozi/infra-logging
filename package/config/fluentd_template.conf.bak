@@ -1,0 +1,111 @@
+<source>
+   @type  tail
+   path  /var/log/containers/*.log
+   pos_file  /fluentd/etc/fluentd-cluster-logging.pos
+   time_format  %Y-%m-%dT%H:%M:%S
+   tag  k8slogs.*
+   format  json
+   read_from_head  true
+</source>
+<source>
+   @type  monitor_agent
+   bind  0.0.0.0
+   port  24220
+</source>
+<filter  k8slogs.**>
+   type  kubernetes_metadata
+   merge_json_log  true
+   preserve_json_log  true
+</filter>
+<filter  k8slogs.**>
+   @type  record_transformer
+   enable_ruby  true
+   <record>
+      kubernetes_namespace_container_name $${record["kubernetes"]["namespace_name"]}.$${record["kubernetes"]["container_name"]}     
+   </record>
+</filter>
+<match  k8slogs.**>
+   @type  rewrite_tag_filter
+   rewriterule1  kubernetes_namespace_container_name    ^(.+)$$  kubernetes.$$1
+</match>
+
+<filter  k8slogs.**>
+   @type  record_transformer #Remove the unnecessary field as the information is already available in other fields.
+   remove_keys  kubernetes_namespace_container_name
+</filter>
+
+<match  k8slogs.**>         
+    @type  copy        
+    {{range $i, $store := .allTargets -}}
+    <store>
+        @type  {{$store.Target.TargetType}}
+        host  {{$store.Target.ESHost}}           
+        port  {{$store.Target.ESPort}}
+        logstash_format  {{$store.Target.OutputLogStashFormat}}
+        logstash_prefix  {{$store.Target.ESLogstashPrefix}}
+        logstash_dateformat  {{$store.Target.ESLogstashDateformat}}
+        include_tag_key  {{$store.Target.ESIncludeTagKey}}
+        type_name  {{$store.Target.OutputTypeName}}
+        flush_interval  {{$store.Target.OutputFlushInterval}}s
+        {{ if $store.Secret.Label -}}
+        <{{$store.Secret.Label}}>
+        {{end -}}
+            {{range $j, $dt := $store.Secret.Data -}}
+                {{$j}} {{$dt}}
+            {{end -}}
+        {{ if $store.Secret.Label -}}
+        </{{$store.Secret.Label}}>
+        {{end -}}
+    </store>
+    {{end -}}
+</match>
+
+# service log
+<source>
+  @type tail
+  path /var/log/volumes/*/*/*/apache2/* # path is /var/log/volumes/<namespace>/<stack>/<service>/<type>/*.log
+  pos_file /var/log/apache2.log.pos
+  tag servicelog.*
+  format apache2
+</source>
+
+<source>
+  @type tail
+  path /var/log/volumes/*/*/*/nginx/* # path is /var/log/volumes/<namespace>/<stack>/<service>/<type>/*.log
+  pos_file /var/log/nginx.log.pos
+  tag servicelog.*
+  format nginx
+</source>
+
+<source>
+  @type tail
+  path /var/log/volumes/*/*/*/syslog/* # path is /var/log/volumes/<namespace>/<stack>/<service>/<type>/*.log
+  pos_file /var/log/syslog.log.pos
+  tag servicelog.*
+  format syslog
+</source>
+
+{{range $i, $store := .allTargets -}}
+{{if ne $store.Target.Namespace "cattle-system"}}
+<match  servicelog.var.log.volumes.{{$store.Target.Namespace}}.**>
+    @type  {{$store.Target.TargetType}}
+    host  {{$store.Target.ESHost}}           
+    port  {{$store.Target.ESPort}}
+    logstash_format  {{$store.Target.OutputLogStashFormat}}
+    logstash_prefix  {{$store.Target.ESLogstashPrefix}}
+    logstash_dateformat  {{$store.Target.ESLogstashDateformat}}
+    include_tag_key  {{$store.Target.ESIncludeTagKey}}
+    type_name  {{$store.Target.OutputTypeName}}
+    flush_interval  {{$store.Target.OutputFlushInterval}}s
+    {{ if $store.Secret.Label -}}
+    <{{$store.Secret.Label}}>
+    {{end -}}
+        {{range $j, $dt := $store.Secret.Data -}}
+            {{$j}} {{$dt}}
+        {{end -}}
+    {{ if $store.Secret.Label -}}
+    </{{$store.Secret.Label}}>
+    {{end -}}
+</match>
+{{end -}}
+{{end -}}

@@ -22,6 +22,7 @@ var VERSION = "v0.0.0-dev"
 //TODO:
 //1. remove useless k8s.io code
 //2. package a better base image
+
 var (
 	logControllerName string
 	logProviderName   string
@@ -33,15 +34,23 @@ func main() {
 	app.Name = "infra-logging"
 	app.Version = VERSION
 	app.Flags = []cli.Flag{
+		cli.BoolFlag{
+			Name:  "fluentd-dry-run",
+			Usage: "generate the config file, but not run fluentd",
+		},
 		cli.StringFlag{
 			Name:  "fluentd-config-dir",
 			Usage: "Fluentd config directory",
-			Value: "/fluentd/etc/",
+			Value: "/fluentd/etc/config",
+		},
+		cli.StringFlag{
+			Name:  "fluentd-plugin-dir",
+			Usage: "Fluentd plugin directory",
+			Value: "/fluentd/etc/plugins",
 		},
 		cli.StringFlag{
 			Name:  "k8s-config-path",
 			Usage: "k8s config path",
-			// Value: "/Users/fengcaixiao/.kube/config",
 		},
 	}
 
@@ -70,14 +79,8 @@ func main() {
 			return err
 		}
 
-		ct := fluentd.NewController(prd)
-		if err = ct.Run(); err != nil {
-			logrus.Errorf("Error run controller, details: %v", err)
-			return err
-		}
-
 		//TODO: better stop chan handle
-		go handleSigterm(op, ct)
+		go handleSigterm(op)
 		<-sigs // Wait for signals (this hangs until a signal arrives)
 		glog.Info("Shutting down...")
 
@@ -89,7 +92,7 @@ func main() {
 	app.Run(os.Args)
 }
 
-func handleSigterm(op *fluentd.Operator, ct *fluentd.Controller) {
+func handleSigterm(op *fluentd.Operator) {
 	fmt.Println("in handleSigterm")
 	signalChan := make(chan os.Signal, 1)
 	signal.Notify(signalChan, syscall.SIGTERM)
@@ -99,7 +102,6 @@ func handleSigterm(op *fluentd.Operator, ct *fluentd.Controller) {
 	exitCode := 0
 
 	op.Stop()
-	ct.Stop()
 	exitCode = 1
 	logrus.Infof("Exiting with %v", exitCode)
 	os.Exit(exitCode)

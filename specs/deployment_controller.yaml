@@ -1,0 +1,56 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: logging-controller
+  namespace: cattle-system
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: logging-controller
+subjects:
+  - kind: ServiceAccount
+    name: logging-controller
+    namespace: cattle-system
+roleRef:
+  kind: ClusterRole
+  name: cluster-admin
+  apiGroup: rbac.authorization.k8s.io
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    name: logging-controller
+    role: service
+  name: logging-controller
+  namespace: cattle-system
+spec:
+  ports:
+    - port: 8090
+      targetPort: 8090
+      nodePort: 38090
+  type: NodePort
+  selector:
+    k8s-app: logging-controller
+---
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: logging-controller
+  namespace: cattle-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      k8s-app: logging-controller
+  template:
+    metadata:
+      labels:
+        k8s-app: logging-controller
+    spec:
+      containers:
+      - name: logging-controller
+        image: micheliac/logging-k8s-controller:v0.0.0.2
+      serviceAccountName: logging-controller

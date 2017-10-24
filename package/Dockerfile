@@ -1,13 +1,6 @@
-FROM micheliac/infra-logging-base:v.0.0.1
-
-COPY plugins /fluentd/etc/
-COPY config /fluentd/etc/
+FROM reg.cnrancher.com/logging/infra-logging-base:v.0.0.7
+COPY plugins /fluentd/etc/plugins
+COPY config /fluentd/etc/config
 COPY infra-logging /usr/bin/
 
-RUN apt-get update \
-     && apt-get install \
-     -y --no-install-recommends \
-     procps vim
-
 CMD ["infra-logging"]
-

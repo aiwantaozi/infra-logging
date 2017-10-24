@@ -1,0 +1,72 @@
+apiVersion: rbac.authorization.k8s.io/v1alpha1
+kind: Role
+metadata:
+  name: kibana
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - endpoints
+  verbs:
+  - get
+---
+apiVersion: rbac.authorization.k8s.io/v1alpha1
+kind: RoleBinding
+metadata:
+  name: kibana
+  
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: kibana
+subjects:
+- kind: ServiceAccount
+  name: kibana
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: kibana
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    io.kompose.service: kibana
+  name: kibana
+spec:
+  ports:
+  - name: "5601"
+    port: 5601
+    targetPort: 5601
+    nodePort: 8411
+  type: NodePort
+  selector:
+    io.kompose.service: kibana
+status:
+  loadBalancer: {}
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  labels:
+    io.kompose.service: kibana
+  name: kibana
+spec:
+  replicas: 1
+  strategy: {}
+  template:
+    metadata:
+      labels:
+        io.kompose.service: kibana
+    spec:
+      containers:
+      - image: kibana:5.6.4
+        name: kibana
+        ports:
+        - containerPort: 5601
+        resources: {}
+        env:
+        - name: ELASTICSEARCH_URL
+          value: "http://elasticsearch.cattle-system"
+      restartPolicy: Always

@@ -11,11 +11,12 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/pkg/api"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
 
-	logging "github.com/aiwantaozi/infra-logging/client/logging"
-	loggingv1 "github.com/aiwantaozi/infra-logging/client/logging/v1"
+	logging "github.com/aiwantaozi/infra-logging-client/logging"
+	loggingv1 "github.com/aiwantaozi/infra-logging-client/logging/v1"
 	infraConfig "github.com/aiwantaozi/infra-logging/config"
 	provider "github.com/aiwantaozi/infra-logging/provider"
 )
@@ -75,7 +76,7 @@ func NewOperator(prd provider.LogProvider) (*Operator, error) {
 		crdclient: crdclient,
 		queue:     workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), k8sMonitorQueue),
 		config: Config{
-			Namespace: loggingv1.Namespace,
+			Namespace: api.NamespaceAll,
 			CrdGroup:  loggingv1.GroupName,
 			LabelsMap: loggingv1.LabelMaps,
 		},
@@ -106,7 +107,7 @@ func (c *Operator) Run() error {
 			errChan <- errors.Wrap(err, "communicating with server failed")
 			return
 		}
-		logrus.Infof("msg", "connection established", "cluster-version", v)
+		logrus.Infof("connection established cluster-version %s", v)
 
 		errChan <- nil
 	}()
@@ -116,14 +117,8 @@ func (c *Operator) Run() error {
 		if err != nil {
 			return err
 		}
-		logrus.Infof("msg", "CRD API endpoints ready")
+		logrus.Info("CRD API endpoints ready")
 	}
-
-	watchedObject, err := c.mclient.LoggingV1().Loggings(loggingv1.Namespace).Get(loggingv1.LoggingName, metav1.GetOptions{})
-	if err != nil {
-		return err
-	}
-	logrus.Info(watchedObject.ClusterName)
 
 	go c.worker()
 
@@ -141,7 +136,7 @@ func (c *Operator) Stop() {
 func (c *Operator) keyFunc(obj interface{}) (string, bool) {
 	k, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
 	if err != nil {
-		logrus.Infof("msg", "creating key failed", "err", err)
+		logrus.Infof("creating key failed err: %v", err)
 		return k, false
 	}
 	return k, true
@@ -155,7 +150,7 @@ func (c *Operator) getObject(obj interface{}) (metav1.Object, bool) {
 
 	o, err := meta.Accessor(obj)
 	if err != nil {
-		logrus.Infof("msg", "get object failed", "err", err)
+		logrus.Infof("get object failed err: %v", err)
 		return nil, false
 	}
 	return o, true
@@ -210,8 +205,8 @@ func (c *Operator) handleLoggingAdd(obj interface{}) {
 	if !ok {
 		return
 	}
+	logrus.Infof("Logging added key: %s", key)
 
-	logrus.Infof("msg", "Logging added", "key", key)
 	c.enqueue(key)
 }
 
@@ -221,7 +216,7 @@ func (c *Operator) handleLoggingDelete(obj interface{}) {
 		return
 	}
 
-	logrus.Infof("msg", "Logging deleted", "key", key)
+	logrus.Infof("Logging deleted key: %s", key)
 	c.enqueue(key)
 }
 
@@ -231,7 +226,7 @@ func (c *Operator) handleLoggingUpdate(old, cur interface{}) {
 		return
 	}
 
-	logrus.Infof("msg", "Logging updated", "key", key)
+	logrus.Infof("Logging updated key: %s", key)
 	c.enqueue(key)
 }
 
@@ -254,7 +249,7 @@ func (c *Operator) sync(key string) error {
 		return err
 	}
 
-	logrus.Infof("msg", "sync logging", "key", key, "name", am.ObjectMeta.Name)
+	logrus.Infof("Logging sync key: %s name %s", key, am.ObjectMeta.Name)
 	return nil
 }
 

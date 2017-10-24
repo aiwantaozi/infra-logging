@@ -9,8 +9,8 @@ import (
 )
 
 type LogProvider interface {
-	Init(c *cli.Context)
-	ApplyConfig(infraconfig.InfraLoggingConfig) error
+	Init(*cli.Context)
+	ApplyConfig(*infraconfig.InfraLoggingConfig) error
 	Run()
 	Stop() error
 	Reload() error

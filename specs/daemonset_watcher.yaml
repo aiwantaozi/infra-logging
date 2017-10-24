@@ -1,0 +1,82 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: fluentd-operator
+  namespace: cattle-system
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1alpha1
+metadata:
+  name: fluentd-operator
+subjects:
+  - kind: ServiceAccount
+    name: fluentd-operator
+    namespace: cattle-system
+roleRef:
+  kind: ClusterRole
+  name: cluster-admin
+  apiGroup: rbac.authorization.k8s.io
+---
+kind: Secret
+apiVersion: v1
+metadata:
+  name: loggingsecret
+  namespace: cattle-system
+data:
+  loggingsecret: eyJ0eXBlIjoiIiwibGFiZWwiOiIiLCJkYXRhIjp7InVzZXIiOiIiLCJwYXNzd29yZCI6IiIsInRva2VuIjoiIn19
+---
+apiVersion: extensions/v1beta1
+kind: DaemonSet
+metadata:
+  name: fluentd
+  namespace: cattle-system
+  labels:
+    k8s-app: fluentd-logging
+    version: v1
+    kubernetes.io/cluster-service: "true"
+spec:
+  template:
+    metadata:
+      labels:
+        k8s-app: fluentd-logging
+        version: v1
+        kubernetes.io/cluster-service: "true"
+    spec:
+      tolerations:
+      - key: node-role.kubernetes.io/master
+        effect: NoSchedule
+      containers:
+      - name: fluentd
+        image: micheliac/infra-logging:v0.1.6
+        imagePullPolicy: IfNotPresent
+        volumeMounts:
+        - name: varlibdockercontainers
+          mountPath: /var/lib/docker/containers
+        - name: varlogcontainers
+          mountPath: /var/log/containers
+        - name: varlogpods
+          mountPath: /var/log/pods
+        - name: fluentdlog
+          mountPath: /fluentd/etc/log
+        - name: servicelog
+          mountPath: /var/log/volumes
+        securityContext:
+          privileged: true
+      serviceAccountName: fluentd-operator
+      terminationGracePeriodSeconds: 30
+      volumes:
+      - name: varlibdockercontainers
+        hostPath:
+          path: /var/lib/docker/containers
+      - name: varlogcontainers
+        hostPath:
+          path: /var/log/containers
+      - name: varlogpods
+        hostPath:
+          path: /var/log/pods
+      - name: fluentdlog
+        hostPath:
+          path: /var/log/fluentd
+      - name: servicelog
+        hostPath:
+          path: /var/log/volumes

@@ -4,7 +4,7 @@
 3. When in different namespace, the UI try to get the logging infomation, should return the all namespace info, or just current, is there any place we should return all namespace.
 4. Only one fluentd config, for node in different namespace, is fluentd config the same, if same, fluentd may ship infa both to namespace A's elasticsearch and B's elasticsearch
 5. Need to check whether the k8s metadata fluentd plugin could collection docker labels
-
+6. Health check in the fluentd operator
 
 ## Solve
 1. Gopath type not equal to the vendor path, for example the package apiextensions-apiserver have vendor k8s.io/apimachinery/pkg/apis/meta/v1 and so on, when call the function in apiextensions-apiserver, it try to use the type in apiextensions-apiserver/vendor, not current project vendor, and will face the type different problem. 
@@ -36,3 +36,9 @@ func NewLoggingCustomResourceDefinition(group string, labels map[string]string) 
 apiextensions-apiserver try to use the metav1 in itself vendor, will happen can't use k8s.io/apimachinery/pkg/apis/meta/v1 as k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1/vendor/k8s.io/apimachinery/pkg/apis/meta/v1
 
 Solve: delete the the vendor in the apiextensions-apiserver, and it will use the vendor in current project.
+
+## TODO:
+1. improve the base images https://docs.fluentd.org/v0.12/articles/before-install
+2. we can let use input the fluentd file via FLUENT_CONF environment variable
+https://docs.fluentd.org/v0.12/articles/config-file
+3. validation for different namespace use same logstash prefix 

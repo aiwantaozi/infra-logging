@@ -16,8 +16,9 @@ import (
 	"github.com/Sirupsen/logrus"
 	"github.com/pkg/errors"
 	"github.com/urfave/cli"
+	"k8s.io/client-go/pkg/api"
 
-	loggingv1 "github.com/aiwantaozi/infra-logging/client/logging/v1"
+	loggingv1 "github.com/aiwantaozi/infra-logging-client/logging/v1"
 	infraconfig "github.com/aiwantaozi/infra-logging/config"
 	"github.com/aiwantaozi/infra-logging/provider"
 )
@@ -26,9 +27,8 @@ const (
 	ConfigFile   = "fluentd.conf"
 	TmpFile      = "tmp.conf"
 	PidFile      = "fluentd.pid"
-	TemplatePath = "/fluentd/etc/fluentd_template.conf"
-	PluginsPath  = "fluentd/etc/plugins"
-	logFile      = "fluentd.log"
+	templateFile = "fluentd_template.conf"
+	logPath      = "/fluentd/etc/log/fluentd.log"
 )
 
 var (
@@ -37,13 +37,14 @@ var (
 	cfgPathBak     string
 	pidPath        string
 	tmpPath        string
-	logPath        string
+	templatePath   string
 	fluentdTimeout = 1 * time.Minute
 )
 
 type Provider struct {
 	cfg    fluentdConfig
 	stopCh chan struct{}
+	dryRun bool
 }
 
 //TODO change to lowercase
@@ -51,6 +52,7 @@ type fluentdConfig struct {
 	Name      string
 	StartCmd  string
 	ConfigDir string
+	PluginDir string
 }
 
 func init() {
@@ -63,12 +65,14 @@ func init() {
 
 func (logp *Provider) Init(c *cli.Context) {
 	logp.cfg.ConfigDir = c.String("fluentd-config-dir")
+	logp.cfg.PluginDir = c.String("fluentd-plugin-dir")
+	logp.dryRun = c.Bool("fluentd-dry-run")
 	cfgPath = path.Join(logp.cfg.ConfigDir, ConfigFile)
 	cfgPathBak = path.Join(logp.cfg.ConfigDir, ConfigFile+".bak")
 	pidPath = path.Join(logp.cfg.ConfigDir, PidFile)
 	tmpPath = path.Join(logp.cfg.ConfigDir, TmpFile)
-	logPath = path.Join(logp.cfg.ConfigDir, logFile)
-	logp.cfg.StartCmd = "fluentd " + "-c " + cfgPath + " -p " + PluginsPath + " -d " + pidPath + " --log " + logPath
+	templatePath = path.Join(logp.cfg.ConfigDir, templateFile)
+	logp.cfg.StartCmd = "fluentd " + "-c " + cfgPath + " -p " + logp.cfg.PluginDir + " -d " + pidPath + " --log " + logPath
 }
 
 func (logp *Provider) GetName() string {
@@ -76,20 +80,23 @@ func (logp *Provider) GetName() string {
 }
 
 func (logp *Provider) Run() {
-	cfg, err := infraconfig.GetLoggingConfig(loggingv1.Namespace, loggingv1.LoggingName)
+	if logp.dryRun {
+		return
+	}
+	cfg, err := infraconfig.GetLoggingConfig(api.NamespaceAll, loggingv1.LoggingName)
 	if err != nil {
-		logrus.Errorf("Error in StartFluentd get logging config, details: %s", err.Error())
+		logrus.Errorf("fail get logging config, details: %s", err.Error())
 		<-logp.stopCh
 		return
 	}
 	if err = logp.cfg.write(cfg); err != nil {
-		logrus.Errorf("Error in StartFluentd write config, details: %s", err.Error())
+		logrus.Errorf("fail write fluentd config, details: %s", err.Error())
 		<-logp.stopCh
 		return
 	}
 
 	if err := logp.StartFluentd(); err != nil {
-		logrus.Errorf("Error in StartFluentd, details: %s", err.Error())
+		logrus.Errorf("fail start fluentd, details: %s", err.Error())
 		<-logp.stopCh
 		return
 	}
@@ -97,34 +104,17 @@ func (logp *Provider) Run() {
 }
 
 func (logp *Provider) Stop() error {
-	logrus.Infof("Shutting down provider %v", logp.GetName())
+	logrus.Warnf("shutting down provider %s", logp.GetName())
 	close(logp.stopCh)
 	return nil
 }
 
 func (logp *Provider) StartFluentd() error {
-	return logp.cfg.start()
-}
-
-func (logp *Provider) Reload() error {
-	return logp.cfg.reload()
-}
-
-func (logp *Provider) ApplyConfig(infraCfg infraconfig.InfraLoggingConfig) error {
-	err := logp.cfg.write(infraCfg)
-	if err != nil {
-		return err
+	if logp.dryRun {
+		return nil
 	}
-	err = logp.cfg.reload()
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (cfg *fluentdConfig) start() error {
-	cmd := exec.Command("sh", "-c", cfg.StartCmd)
-
+	cmd := exec.Command("sh", "-c", logp.cfg.StartCmd)
+	logrus.Infof("fluentd start command: %s", logp.cfg.StartCmd)
 	var buf bytes.Buffer
 	cmd.Stdout = &buf
 
@@ -151,7 +141,10 @@ func (cfg *fluentdConfig) start() error {
 	return nil
 }
 
-func (cfg *fluentdConfig) reload() error {
+func (logp *Provider) Reload() error {
+	if logp.dryRun {
+		return nil
+	}
 	pidFile, err := ioutil.ReadFile(pidPath)
 	if err != nil {
 		return err
@@ -159,7 +152,7 @@ func (cfg *fluentdConfig) reload() error {
 
 	pid, err := strconv.Atoi(string(bytes.TrimSpace(pidFile)))
 	if err != nil {
-		return fmt.Errorf("error parsing pid from %s: %s", pidFile, err)
+		return fmt.Errorf("fail parsing pid from %s: %s", pidFile, err)
 	}
 
 	if pid <= 0 {
@@ -167,39 +160,61 @@ func (cfg *fluentdConfig) reload() error {
 		return nil
 	}
 	if _, err := os.FindProcess(pid); err != nil {
-		return fmt.Errorf("error find process pid: %d, details: %v", pid, err)
+		return fmt.Errorf("fail find process pid: %d, details: %v", pid, err)
 	}
 
 	if err = syscall.Kill(pid, syscall.SIGHUP); err != nil {
-		return fmt.Errorf("error reloading, details: %v", err)
+		return fmt.Errorf("fail reloading, details: %v", err)
 	}
 	return nil
 }
 
-func (cfg *fluentdConfig) write(infraCfg infraconfig.InfraLoggingConfig) (err error) {
-	var w io.Writer
+func (logp *Provider) ApplyConfig(infraCfg *infraconfig.InfraLoggingConfig) error {
+	err := logp.cfg.write(infraCfg)
+	if err != nil {
+		return err
+	}
+	err = logp.Reload()
+	if err != nil {
+		return err
+	}
+	return nil
+}
 
+func (cfg *fluentdConfig) write(infraCfg *infraconfig.InfraLoggingConfig) (err error) {
+	var w io.Writer
 	w, err = os.Create(tmpPath)
 	if err != nil {
-		return errors.Wrap(err, "fluentd create temp config file state error")
+		return errors.Wrap(err, "fail create create fluentd temp config")
 	}
 
 	if _, err := os.Stat(tmpPath); err != nil {
-		return errors.Wrap(err, "fluentd temp config file state error")
+		return errors.Wrap(err, "fail get created fluentd temp config file")
 	}
 
 	var t *template.Template
-	t, err = template.ParseFiles(TemplatePath)
+	t, err = template.ParseFiles(templatePath)
 	if err != nil {
 		return err
 	}
 	conf := make(map[string]interface{})
-	conf["stores"] = infraCfg.Targets
-	conf["sources"] = infraCfg.Sources
+	conf["nsTargets"] = infraCfg.NamespaceTargets
+	conf["clusterTarget"] = infraCfg.ClusterTarget
 	err = t.Execute(w, conf)
 	if err != nil {
 		return err
 	}
+
+	// only change fluentd config when real change happen
+	cfgEqual, err := isConfigEqual()
+	if err != nil {
+		return err
+	}
+	if cfgEqual {
+		logrus.Info("config file not change, no need to reload")
+		return nil
+	}
+	logrus.Info("config file changed, reloading")
 	err = os.Rename(cfgPath, cfgPathBak)
 	if err != nil {
 		return errors.Wrap(err, "fail to rename config config file")
@@ -224,4 +239,19 @@ func (cfg *fluentdConfig) write(infraCfg infraconfig.InfraLoggingConfig) (err er
 		return errors.Wrap(err, "fail to sync config file")
 	}
 	return nil
+}
+
+func isConfigEqual() (bool, error) {
+	f1, err := ioutil.ReadFile(tmpPath)
+
+	if err != nil {
+		return false, errors.Wrapf(err, "fail read file %s", tmpPath)
+	}
+
+	f2, err := ioutil.ReadFile(cfgPath)
+
+	if err != nil {
+		return false, errors.Wrapf(err, "fail read file %s", cfgPath)
+	}
+	return bytes.Equal(f1, f2), nil
 }

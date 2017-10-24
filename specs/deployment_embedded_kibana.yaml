@@ -1,0 +1,83 @@
+apiVersion: rbac.authorization.k8s.io/v1alpha1
+kind: Role
+metadata:
+  name: kibana
+  namespace: cattle-system
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - endpoints
+  verbs:
+  - get
+---
+apiVersion: rbac.authorization.k8s.io/v1alpha1
+kind: RoleBinding
+metadata:
+  name: kibana
+  namespace: cattle-system
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: kibana
+subjects:
+- kind: ServiceAccount
+  name: kibana
+  namespace: cattle-system
+#---
+#apiVersion: v1
+#kind: ServiceAccount
+#metadata:
+#  name: kibana
+#  namespace: cattle-system
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    io.kompose.service: kibana
+  name: kibana
+  namespace: cattle-system
+spec:
+  ports:
+  - name: "5601"
+    port: 5601
+    targetPort: 5601
+    nodePort: 30024
+  type: NodePort
+  selector:
+    io.kompose.service: kibana
+status:
+  loadBalancer: {}
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  labels:
+    io.kompose.service: kibana
+  name: kibana
+  namespace: cattle-system
+spec:
+  replicas: 1
+  strategy: {}
+  template:
+    metadata:
+      labels:
+        io.kompose.service: kibana
+    spec:
+      containers:
+      - image: kibana:5.6.4
+        name: kibana
+        ports:
+        - containerPort: 5601
+        resources: {}
+        env:
+        - name: ELASTICSEARCH_URL
+          value: "http://elasticsearch.cattle-system:9200"
+        - name: SERVER_BASEPATH
+          value: /api/v1/proxy/namespaces/kube-system/services/kibana-logging
+        - name: XPACK_MONITORING_ENABLED
+          value: "false"
+        - name: XPACK_SECURITY_ENABLED
+          value: "false"
+      restartPolicy: Always
