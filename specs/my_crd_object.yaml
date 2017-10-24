@@ -19,15 +19,5 @@ spec:
     output_logstash_prefix: "logstash"
     output_logstash_dateformat: '%Y-%m-%d %H:%M:%S'
     output_tag_key: "mytag3"
-  volumes:
-  - name: logging_secret
-    secret:
-      secretName: logging_secret
 status:
-  host:
-    - host_id: 172.17.0.1
-      current_verison: "1234"
-      status: processed
-    - host_id: 172.17.0.2
-      current_version: "1235"
-      status: running
+  

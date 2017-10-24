@@ -21,14 +21,16 @@ var (
 )
 
 type InfraLoggingConfig struct {
-	Provider      string `json:"provider"`
-	LatestVersion string `json:"latest_version"`
-	Sources       []struct {
-		Environment string `json:"environment"`
-		InputPath   string `json:"input_path"`
-		InputFormat string `json:"input_format"`
-	} `json:"sources"`
-	Targets []Target `json:"targets"`
+	Provider      string   `json:"provider"`
+	LatestVersion string   `json:"latest_version"`
+	Sources       []Source `json:"sources"`
+	Targets       []Target `json:"targets"`
+}
+
+type Source struct {
+	Environment string `json:"environment"`
+	InputPath   string `json:"input_path"`
+	InputFormat string `json:"input_format"`
 }
 
 type Target struct {
@@ -110,10 +112,19 @@ func GetLoggingConfig(namespace, name string) (InfraLoggingConfig, error) {
 		tgs = append(tgs, tg)
 	}
 
+	var scs []Source
+	for _, v := range logging.Spec.Sources {
+		scs = append(scs, Source{
+			InputPath:   v.InputPath,
+			InputFormat: v.InputFormat,
+			Environment: v.Environment,
+		})
+	}
+
 	infraCfg := InfraLoggingConfig{
 		Provider:      logging.Spec.Provider,
 		LatestVersion: logging.Spec.LatestVersion,
-		Sources:       logging.Spec.Sources,
+		Sources:       scs,
 		Targets:       tgs,
 	}
 
