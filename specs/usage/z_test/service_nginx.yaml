@@ -1,0 +1,42 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    name: nginx
+    role: service
+  name: nginx
+spec:
+  ports:
+    - name: "8499"
+      port: 8080
+      targetPort: 80
+      nodePort: 30063 
+  type: NodePort
+  selector:
+    k8s-app: nginx
+---
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: mynginx
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      k8s-app: nginx
+  template:
+    metadata:
+      labels:
+        k8s-app: nginx
+    spec:
+      containers:
+      - name: nginx
+        image: reg.cnrancher.com/logging/mynginx:v0.2
+        env:
+        volumeMounts:
+        - name: accesslog
+          mountPath: /var/logs/mynginx
+      volumes:
+      - name: accesslog
+        hostPath:
+          path: /var/log/volumes/default/mystack/myservice/nginx
