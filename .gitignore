@@ -6,4 +6,4 @@
 debug
 /tmp
 build.log
-/test
+test/

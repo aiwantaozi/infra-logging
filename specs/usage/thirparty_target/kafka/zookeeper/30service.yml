@@ -1,0 +1,14 @@
+# the headless service is for PetSet DNS, this one is for clients
+apiVersion: v1
+kind: Service
+metadata:
+  name: zookeeper
+  namespace: kafka
+spec:
+  ports:
+  - port: 2181
+    name: client
+    nodePort: 30071
+  type: NodePort
+  selector:
+    app: zookeeper
