@@ -54,6 +54,15 @@ type Target struct {
 	//embedded
 	EmResReqCPU    string `json:"emResReqCPU"`
 	EmResReqMemory string `json:"emResReqMemory"`
+	//kafka
+	KafkaBrokerType   string `json:"kafka_broker_type"`
+	KafkaBrokers      string `json:"kafka_brokers"`
+	KafkaZookeeper    string `json:"kafka_zookeeper"`
+	KafkaDefaultTopic string `json:"kafka_default_topic"`
+	//kafka data type
+	KafkaOutputDataType string `json:"kafka_output_data_type"`
+	//kafka producer settings
+	KafkaMaxSendRetries int `json:"kafka_max_send_retries"`
 }
 
 type Logging struct {
