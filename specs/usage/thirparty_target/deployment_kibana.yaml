@@ -68,5 +68,5 @@ spec:
         resources: {}
         env:
         - name: ELASTICSEARCH_URL
-          value: "http://47.52.113.11:30022"
+          value: "http://47.52.113.251:30022"
       restartPolicy: Always

@@ -81,12 +81,11 @@ spec:
           protocol: TCP
         volumeMounts:
         - mountPath: /data
-          name: es-storage
+          name: storage
       volumes:
-      - name: es-storage
+      - name: storage
         hostPath:
-          path: /es/data
-          type: Directory
+          path: /es/mydata
 ---
 apiVersion: v1
 kind: Service

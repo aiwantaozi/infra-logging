@@ -23,7 +23,7 @@ target:
   # common config
   enable: "true"
   # common config: target type list are: embedded, elasticsearch, splunk, kafka, you could use one of them.
-  target_type: embedded
+  target_type: elasticsearch
   # common config: you could change key and value to the the tag you want to add to each record, it you don't want to add tag, just delete these three line
   output_records:
     mykey4: mykey4

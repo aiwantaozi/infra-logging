@@ -21,7 +21,7 @@ kind: Secret
 apiVersion: v1
 metadata:
   name: loggingsecret
-  namespace: cattle-system
+  namespace: default
 data:
   loggingsecret: eyJ0eXBlIjoiIiwibGFiZWwiOiIiLCJkYXRhIjp7InVzZXIiOiIiLCJwYXNzd29yZCI6IiIsInRva2VuIjoiIn19
 ---
