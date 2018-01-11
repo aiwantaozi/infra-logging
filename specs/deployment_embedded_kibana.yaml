@@ -24,12 +24,12 @@ subjects:
 - kind: ServiceAccount
   name: kibana
   namespace: cattle-system
-#---
-#apiVersion: v1
-#kind: ServiceAccount
-#metadata:
-#  name: kibana
-#  namespace: cattle-system
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+ name: kibana
+ namespace: cattle-system
 ---
 apiVersion: v1
 kind: Service

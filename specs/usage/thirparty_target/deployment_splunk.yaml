@@ -83,3 +83,5 @@ spec:
         emptyDir: {}
       - name: opt-splunk-var
         emptyDir: {}
+      nodeSelector:
+        embedded: "no" # attention

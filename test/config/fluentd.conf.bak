@@ -25,27 +25,12 @@
   @type record_transformer
   <record>
     tag ${tag}
-    mykey3 mykey3
-    mykey4 mykey4
     </record>
 </filter>
 
 <match  cluster.**> 
-    @type elasticsearch
+    @type 
     
-    flush_interval 2s
-    include_tag_key  true
-    host "elasticsearch.cattle-system"
-    port 9200
-    scheme "http"
-    reload_connections "true"
-    logstash_prefix "clusterid-cattle-system"
-    logstash_format true
-    logstash_dateformat  "%Y.%m.%d"
-    type_name  "container_log"
-    
-    password changeme
-    user myelastic
     buffer_type file
     buffer_path /fluentd/etc/buffer/cluster.buffer
     buffer_queue_limit 128
@@ -57,131 +42,6 @@
 </match>
 
 # namespace log
-<source>
-   @type  tail
-   path  /var/log/containers/*.log
-   pos_file  /fluentd/etc/log/fluentd-namespace-default-logging.pos
-   time_format  %Y-%m-%dT%H:%M:%S
-   tag  default.*
-   format  json
-   read_from_head  true
-</source>
-
-<filter  default.**>
-   @type  kubernetes_metadata
-   merge_json_log  true
-   preserve_json_log  true
-</filter>
-
-<filter default.**>
-  @type record_transformer
-  enable_ruby  true
-  <record>
-    tag ${tag}
-    namespace ${record["kubernetes"]["namespace_name"]}
-    </record>
-</filter>
-
-<filter default.**>
-  @type grep
-  <regexp>
-    key namespace
-    pattern default
-  </regexp>
-</filter>
-
-<filter default.**>
-  @type record_transformer
-  remove_keys namespace
-</filter>
-
-<match  default.**> 
-    @type elasticsearch
-    flush_interval 1s
-    
-    include_tag_key  true
-    host aliyun_ip
-    port 30022
-    scheme "http"
-    reload_connections "true"
-    logstash_prefix "test-default"
-    logstash_format true
-    logstash_dateformat  %Y.%m.%d
-    type_name  "container_log"
-    
-    password changeme
-    user myelastic
-    max_retry_wait 30
-    disable_retry_limit
-    num_threads 8
-    buffer_type file
-    buffer_path /fluentd/etc/buffer/default.buffer
-    buffer_queue_limit 128
-    buffer_chunk_limit 256m
-    slow_flush_log_threshold 40.0
-</match>
-<source>
-   @type  tail
-   path  /var/log/containers/*.log
-   pos_file  /fluentd/etc/log/fluentd-namespace-default-logging.pos
-   time_format  %Y-%m-%dT%H:%M:%S
-   tag  default.*
-   format  json
-   read_from_head  true
-</source>
-
-<filter  default.**>
-   @type  kubernetes_metadata
-   merge_json_log  true
-   preserve_json_log  true
-</filter>
-
-<filter default.**>
-  @type record_transformer
-  enable_ruby  true
-  <record>
-    tag ${tag}
-    namespace ${record["kubernetes"]["namespace_name"]}
-    mykey1 mykey1
-    mykey2 mykey2
-    </record>
-</filter>
-
-<filter default.**>
-  @type grep
-  <regexp>
-    key namespace
-    pattern default
-  </regexp>
-</filter>
-
-<filter default.**>
-  @type record_transformer
-  remove_keys namespace
-</filter>
-
-<match  default.**> 
-    @type kafka_buffered
-    flush_interval 1s
-    
-    
-    brokers broker1:port,broker2:port
-    
-    default_topic message
-    output_data_type  json
-    output_include_tag  true
-    output_include_time  true
-    # get_kafka_client_log  true
-    max_send_retries  3
-    max_retry_wait 30
-    disable_retry_limit
-    num_threads 8
-    buffer_type file
-    buffer_path /fluentd/etc/buffer/default.buffer
-    buffer_queue_limit 128
-    buffer_chunk_limit 256m
-    slow_flush_log_threshold 40.0
-</match>
 # service log
 <source>
   @type tail
@@ -228,50 +88,3 @@
   </record>
 </filter>
 
-<match  servicelog.var.log.volumes.default.**>
-  @type elasticsearch
-  flush_interval 1s
-  
-  include_tag_key  true
-  host aliyun_ip
-  port 30022
-  scheme "http"
-  reload_connections "true"
-  logstash_prefix "test-default"
-  logstash_format true
-  logstash_dateformat  %Y.%m.%d
-  type_name  "service_log"
-  
-  password changeme
-  user myelastic
-  buffer_type file
-  buffer_path /fluentd/etc/buffer/service.default.buffer
-  buffer_queue_limit 128
-  buffer_chunk_limit 256m
-  max_retry_wait 30
-  disable_retry_limit
-  num_threads 8
-  slow_flush_log_threshold 40.0
-</match>
-<match  servicelog.var.log.volumes.default.**>
-  @type kafka_buffered
-  flush_interval 1s
-  
-  
-  brokers  broker1:port,broker2:port
-  
-  default_topic  message
-  output_data_type  json
-  output_include_tag true
-  output_include_time   true
-  # get_kafka_client_log  true
-  max_send_retries  3
-  buffer_type file
-  buffer_path /fluentd/etc/buffer/service.default.buffer
-  buffer_queue_limit 128
-  buffer_chunk_limit 256m
-  max_retry_wait 30
-  disable_retry_limit
-  num_threads 8
-  slow_flush_log_threshold 40.0
-</match>

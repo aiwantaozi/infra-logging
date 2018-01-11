@@ -51,5 +51,7 @@ spec:
     spec:
       containers:
       - name: logging-controller
-        image: reg.cnrancher.com/logging/logging-k8s-controller:v0.0.2.9
+        image: reg.cnrancher.com/logging/logging-k8s-controller:v0.0.3.0
       serviceAccountName: logging-controller
+      nodeSelector:
+        embedded: "yes" # attention

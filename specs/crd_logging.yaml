@@ -31,7 +31,7 @@ target:
   # common config: for the interval will flush to the remote target
   output_flush_interval: 1
   # elasticsearch config: host, you need to change to your own host, if you use embedded, please change to elasticsearch.cattle-system
-  es_host: aliyun_ip
+  es_host: 47.52.113.251
   # elasticsearch config: port, if you use embedded, please change to 9200
   es_port: 30022
   # elasticsearch config
@@ -58,34 +58,34 @@ target:
   kafka_max_send_retries: 3
   # kafka config: kafka topic
   kafka_default_topic: message
----
-apiVersion: "rancher.com/v1"
-kind: Logging
-metadata:
-  name: second
-  namespace: default
-target:
-  enable: "true"
-  es_host: aliyun_ip
-  es_include_tag_key: true
-  es_logstash_dateformat: '%Y.%m.%d'
-  es_logstash_format: false
-  es_logstash_prefix: default
-  es_port: 30022
-  output_flush_interval: 1
-  output_records:
-    mykey2: mykey2
-    mykey1: mykey1
-  splunk_host: ""
-  splunk_port: 0
-  splunk_protocol: ""
-  splunk_source: ""
-  splunk_sourcetype: ""
-  splunk_time_format: ""
-  target_type: kafka
-  kafka_broker_type: broker
-  kafka_zookeeper: zookeeper1:port,zookeeper2:port
-  kafka_output_data_type: json
-  kafka_max_send_retries: 3
-  kafka_brokers: broker1:port,broker2:port
-  kafka_default_topic: message
+# ---
+# apiVersion: "rancher.com/v1"
+# kind: Logging
+# metadata:
+#   name: second
+#   namespace: default
+# target:
+#   enable: "true"
+#   es_host: aliyun_ip
+#   es_include_tag_key: true
+#   es_logstash_dateformat: '%Y.%m.%d'
+#   es_logstash_format: false
+#   es_logstash_prefix: default
+#   es_port: 30022
+#   output_flush_interval: 1
+#   output_records:
+#     mykey2: mykey2
+#     mykey1: mykey1
+#   splunk_host: ""
+#   splunk_port: 0
+#   splunk_protocol: ""
+#   splunk_source: ""
+#   splunk_sourcetype: ""
+#   splunk_time_format: ""
+#   target_type: kafka
+#   kafka_broker_type: broker
+#   kafka_zookeeper: zookeeper1:port,zookeeper2:port
+#   kafka_output_data_type: json
+#   kafka_max_send_retries: 3
+#   kafka_brokers: broker1:port,broker2:port
+#   kafka_default_topic: message

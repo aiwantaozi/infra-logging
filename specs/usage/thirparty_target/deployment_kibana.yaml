@@ -70,3 +70,5 @@ spec:
         - name: ELASTICSEARCH_URL
           value: "http://47.52.113.251:30022"
       restartPolicy: Always
+      nodeSelector:
+        embedded: "no" # attention

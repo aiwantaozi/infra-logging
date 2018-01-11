@@ -86,6 +86,8 @@ spec:
       - name: storage
         hostPath:
           path: /es/mydata
+      nodeSelector:
+        embedded: "no" # attention
 ---
 apiVersion: v1
 kind: Service
